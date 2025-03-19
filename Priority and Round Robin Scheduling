@@ -1,0 +1,145 @@
+#include <stdio.h>
+
+#define MAX_PROCESSES 100
+
+typedef struct {
+    int id, arrival, burst, priority, remaining, completion, turnaround, waiting;
+} Process;
+
+void sortByArrival(Process p[], int n) {
+    for (int i = 0; i < n - 1; i++)
+        for (int j = 0; j < n - i - 1; j++)
+            if (p[j].arrival > p[j + 1].arrival) {
+                Process temp = p[j];
+                p[j] = p[j + 1];
+                p[j + 1] = temp;
+            }
+}
+
+void priorityPreemptive(Process p[], int n) {
+    int time = 0, completed = 0, minPriority = 1e9, index = -1;
+    for (int i = 0; i < n; i++) p[i].remaining = p[i].burst;
+
+    while (completed != n) {
+        minPriority = 1e9, index = -1;
+        for (int i = 0; i < n; i++)
+            if (p[i].arrival <= time && p[i].remaining > 0 && p[i].priority < minPriority) {
+                minPriority = p[i].priority;
+                index = i;
+            }
+
+        if (index != -1) {
+            p[index].remaining--;
+            if (p[index].remaining == 0) {
+                completed++;
+                p[index].completion = time + 1;
+                p[index].turnaround = p[index].completion - p[index].arrival;
+                p[index].waiting = p[index].turnaround - p[index].burst;
+            }
+        }
+        time++;
+    }
+}
+
+void priorityNonPreemptive(Process p[], int n) {
+    sortByArrival(p, n);
+    int completed = 0, time = 0;
+    while (completed != n) {
+        int minPriority = 1e9, index = -1;
+        for (int i = 0; i < n; i++)
+            if (p[i].arrival <= time && p[i].completion == 0 && p[i].priority < minPriority) {
+                minPriority = p[i].priority;
+                index = i;
+            }
+
+        if (index != -1) {
+            time += p[index].burst;
+            p[index].completion = time;
+            p[index].turnaround = p[index].completion - p[index].arrival;
+            p[index].waiting = p[index].turnaround - p[index].burst;
+            completed++;
+        } else time++;
+    }
+}
+
+void roundRobin(Process p[], int n, int quantum) {
+    int time = 0, completed = 0, queue[MAX_PROCESSES], front = 0, rear = 0;
+    for (int i = 0; i < n; i++) p[i].remaining = p[i].burst;
+
+    queue[rear++] = 0;
+    while (completed != n) {
+        int index = queue[front++];
+        if (p[index].remaining > 0) {
+            if (p[index].remaining > quantum) {
+                time += quantum;
+                p[index].remaining -= quantum;
+            } else {
+                time += p[index].remaining;
+                p[index].remaining = 0;
+                p[index].completion = time;
+                p[index].turnaround = p[index].completion - p[index].arrival;
+                p[index].waiting = p[index].turnaround - p[index].burst;
+                completed++;
+            }
+
+            for (int i = 0; i < n; i++)
+                if (p[i].arrival <= time && p[i].remaining > 0 && i != index)
+                    queue[rear++] = i;
+
+            if (p[index].remaining > 0)
+                queue[rear++] = index;
+        }
+    }
+}
+
+void printResults(Process p[], int n) {
+    float totalTAT = 0, totalWT = 0;
+    printf("\nID AT BT PRI CT TAT WT\n");
+    for (int i = 0; i < n; i++) {
+        printf("%2d %3d %3d %4d %3d %3d %3d\n", p[i].id, p[i].arrival, p[i].burst, p[i].priority, p[i].completion, p[i].turnaround, p[i].waiting);
+        totalTAT += p[i].turnaround;
+        totalWT += p[i].waiting;
+    }
+    printf("\nAvg TAT = %.2f, Avg WT = %.2f\n", totalTAT / n, totalWT / n);
+}
+
+int main() {
+    int n, choice, quantum;
+    Process p[MAX_PROCESSES];
+
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+
+    printf("Enter Arrival Time, Burst Time, and Priority for each process:\n");
+    for (int i = 0; i < n; i++) {
+        p[i].id = i + 1;
+        scanf("%d %d %d", &p[i].arrival, &p[i].burst, &p[i].priority);
+    }
+
+    printf("\nSelect Scheduling Algorithm:\n");
+    printf("1. Priority (Preemptive)\n2. Priority (Non-Preemptive)\n3. Round Robin\n");
+    scanf("%d", &choice);
+
+    if (choice == 3) {
+        printf("Enter Quantum Time: ");
+        scanf("%d", &quantum);
+    }
+
+    switch (choice) {
+        case 1:
+            priorityPreemptive(p, n);
+            break;
+        case 2:
+            priorityNonPreemptive(p, n);
+            break;
+        case 3:
+            roundRobin(p, n, quantum);
+            break;
+        default:
+            printf("Invalid choice!\n");
+            return 1;
+    }
+
+    printResults(p, n);
+    return 0;
+}
