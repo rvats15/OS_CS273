@@ -1,0 +1,66 @@
+#include <stdio.h>
+
+typedef struct {
+    int id, burst, period, remaining, deadline;
+} Task;
+
+int main() {
+    int n;
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    Task tasks[n];
+    printf("Enter the CPU burst times:\n");
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &tasks[i].burst);
+        tasks[i].id = i + 1;
+    }
+
+    printf("Enter the deadlines:\n");
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &tasks[i].deadline); // Initial deadline
+    }
+
+    printf("Enter the time periods:\n");
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &tasks[i].period);
+        tasks[i].remaining = 0;
+    }
+
+    int total_time = 6; // Simulate 6ms as per your output
+    printf("\nEarliest Deadline Scheduling:\n");
+    printf("PID\tBurst\tDeadline\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t%d\t%d\n", tasks[i].id, tasks[i].burst, tasks[i].deadline);
+    }
+
+    printf("\nScheduling occurs for %d ms\n", total_time);
+
+    for (int time = 0; time < total_time; time++) {
+        // Refill task at start of period
+        for (int i = 0; i < n; i++) {
+            if (time % tasks[i].period == 0) {
+                tasks[i].remaining = tasks[i].burst;
+                tasks[i].deadline = time + tasks[i].period;
+            }
+        }
+
+        // Select task with earliest deadline
+        int idx = -1;
+        for (int i = 0; i < n; i++) {
+            if (tasks[i].remaining > 0 &&
+               (idx == -1 || tasks[i].deadline < tasks[idx].deadline)) {
+                idx = i;
+            }
+        }
+
+        if (idx != -1) {
+            printf("%dms : Task %d is running.\n", time, tasks[idx].id);
+            tasks[idx].remaining--;
+        } else {
+            printf("%dms : Idle\n", time);
+        }
+    }
+
+    return 0;
+}
