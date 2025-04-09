@@ -1,0 +1,54 @@
+#include <stdio.h>
+
+typedef struct {
+    int id, burst, period, remaining;
+} Task;
+
+int main() {
+    int n;
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    Task tasks[n];
+    printf("Enter the CPU burst times:\n");
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &tasks[i].burst);
+        tasks[i].id = i + 1;
+    }
+
+    printf("Enter the time periods:\n");
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &tasks[i].period);
+        tasks[i].remaining = 0;
+    }
+
+    // Calculate LCM of periods (brute-force)
+    int lcm = tasks[0].period;
+    for (int i = 1; i < n; i++) {
+        int a = lcm, b = tasks[i].period;
+        while (b != 0) {
+            int temp = b;
+            b = a % b;
+            a = temp;
+        }
+        lcm = (lcm * tasks[i].period) / a;
+    }
+
+    printf("LCM=%d\n\n", lcm);
+
+    printf("Rate Monotone Scheduling:\n");
+    printf("PID\tBurst\tPeriod\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t%d\t%d\n", tasks[i].id, tasks[i].burst, tasks[i].period);
+    }
+
+    float utilization = 0;
+    for (int i = 0; i < n; i++) {
+        utilization += (float)tasks[i].burst / tasks[i].period;
+    }
+
+    float bound = n * (pow(2.0, 1.0 / n) - 1);
+    printf("\n%.6f <= %.6f => %s\n", utilization, bound, (utilization <= bound ? "true" : "false"));
+
+    return 0;
+}
